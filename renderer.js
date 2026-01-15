@@ -244,12 +244,12 @@ async function generateChapters() {
 
 function displayResults(data) {
     const topics = data.topics || data;
-    const title = data.title || '（タイトルなし）';
+    const titles = data.titles || (data.title ? [data.title] : ['（タイトルなし）']);
 
     resultContent.innerHTML = `
     <div class="video-title-section">
-      <div class="part-title">📺 動画タイトル</div>
-      <div class="video-title">${escapeHtml(title)}</div>
+      <div class="part-title">📺 動画タイトル案（ABテスト用）</div>
+      ${titles.map((t, i) => `<div class="video-title-item"><span class="title-label">案${i + 1}:</span> ${escapeHtml(t)}</div>`).join('')}
     </div>
     
     <div class="part-title">【今回の話題】</div>
@@ -262,14 +262,14 @@ function displayResults(data) {
 
 function displaySplitResults(part1, part2) {
     const p1Topics = part1.topics || part1;
-    const p1Title = part1.title || '（タイトルなし）';
+    const p1Titles = part1.titles || (part1.title ? [part1.title] : ['（タイトルなし）']);
     const p2Topics = part2.topics || part2;
-    const p2Title = part2.title || '（タイトルなし）';
+    const p2Titles = part2.titles || (part2.title ? [part2.title] : ['（タイトルなし）']);
 
     resultContent.innerHTML = `
     <div class="video-title-section">
-      <div class="part-title">📺 前半動画タイトル</div>
-      <div class="video-title">${escapeHtml(p1Title)}</div>
+      <div class="part-title">📺 前半動画タイトル案</div>
+      ${p1Titles.map((t, i) => `<div class="video-title-item"><span class="title-label">案${i + 1}:</span> ${escapeHtml(t)}</div>`).join('')}
     </div>
     <div class="part-title">【前半の話題】</div>
     ${p1Topics.map(t => {
@@ -280,8 +280,8 @@ function displaySplitResults(part1, part2) {
     <hr class="divider">
     
     <div class="video-title-section">
-      <div class="part-title">📺 後半動画タイトル</div>
-      <div class="video-title">${escapeHtml(p2Title)}</div>
+      <div class="part-title">📺 後半動画タイトル案</div>
+      ${p2Titles.map((t, i) => `<div class="video-title-item"><span class="title-label">案${i + 1}:</span> ${escapeHtml(t)}</div>`).join('')}
     </div>
     <div class="part-title">【後半の話題】</div>
     ${p2Topics.map(t => {
@@ -292,6 +292,7 @@ function displaySplitResults(part1, part2) {
 }
 
 // テキスト内容を生成（コピーとテキスト保存で共通）
+// テキスト内容を生成（コピーとテキスト保存で共通）
 function generateTextContent() {
     let text = '';
 
@@ -299,21 +300,30 @@ function generateTextContent() {
     if (generatedTopics.part1 && generatedTopics.part2) {
         const p1 = generatedTopics.part1;
         const p2 = generatedTopics.part2;
-        const p1Topics = p1.topics || p1;
-        const p1Title = p1.title || '';
-        const p2Topics = p2.topics || p2;
-        const p2Title = p2.title || '';
 
-        text = `【前半タイトル】\n${p1Title}\n\n`;
-        text += '【前半の話題】\n';
+        const p1Titles = p1.titles || (p1.title ? [p1.title] : ['（タイトルなし）']);
+        const p2Titles = p2.titles || (p2.title ? [p2.title] : ['（タイトルなし）']);
+        const p1Thumbs = p1.thumbnails || [];
+        const p2Thumbs = p2.thumbnails || [];
+        const p1Topics = p1.topics || p1;
+        const p2Topics = p2.topics || p2;
+
+        text += '【前半タイトル案】\n';
+        p1Titles.forEach((t, i) => text += `案${i + 1}: ${t}\n`);
+        text += '\n【前半サムネ文言案】\n';
+        p1Thumbs.forEach((tm, i) => text += `案${i + 1}: メイン「${tm.main}」 サブ「${tm.sub}」\n`);
+        text += '\n【前半の話題】\n';
         text += p1Topics.map(t =>
             typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
         ).join('\n');
 
         text += '\n\n-------------------\n\n';
 
-        text += `【後半タイトル】\n${p2Title}\n\n`;
-        text += '【後半の話題】\n';
+        text += '【後半タイトル案】\n';
+        p2Titles.forEach((t, i) => text += `案${i + 1}: ${t}\n`);
+        text += '\n【後半サムネ文言案】\n';
+        p2Thumbs.forEach((tm, i) => text += `案${i + 1}: メイン「${tm.main}」 サブ「${tm.sub}」\n`);
+        text += '\n【後半の話題】\n';
         text += p2Topics.map(t =>
             typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
         ).join('\n');
@@ -321,10 +331,15 @@ function generateTextContent() {
     // 分割なしの場合
     else {
         const topics = generatedTopics.topics || generatedTopics;
-        const title = generatedTopics.title || '';
+        const titles = generatedTopics.titles || (generatedTopics.title ? [generatedTopics.title] : ['（タイトルなし）']);
+        const thumbs = generatedTopics.thumbnails || [];
 
-        text = `【動画タイトル】\n${title}\n\n`;
-        text += '【今回の話題】\n';
+        text = '【動画タイトル案】\n';
+        titles.forEach((t, i) => text += `案${i + 1}: ${t}\n`);
+        text += '\n【サムネ文言案】\n';
+        thumbs.forEach((tm, i) => text += `案${i + 1}: メイン「${tm.main}」 サブ「${tm.sub}」\n`);
+
+        text += '\n【今回の話題】\n';
         text += topics.map(t =>
             typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
         ).join('\n');
