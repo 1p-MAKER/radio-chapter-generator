@@ -64,11 +64,26 @@ ipcMain.handle('select-srt-file', async () => {
     return { path: filePath, content };
 });
 
-// ファイル保存ダイアログ
+// ファイル保存ダイアログ（SRT）
 ipcMain.handle('save-srt-file', async (event, { content, defaultName }) => {
     const result = await dialog.showSaveDialog(mainWindow, {
         defaultPath: defaultName,
         filters: [{ name: 'SRT Files', extensions: ['srt'] }]
+    });
+
+    if (result.canceled) {
+        return false;
+    }
+
+    fs.writeFileSync(result.filePath, content, 'utf-8');
+    return true;
+});
+
+// ファイル保存ダイアログ（テキスト）
+ipcMain.handle('save-txt-file', async (event, { content, defaultName }) => {
+    const result = await dialog.showSaveDialog(mainWindow, {
+        defaultPath: defaultName,
+        filters: [{ name: 'Text Files', extensions: ['txt'] }]
     });
 
     if (result.canceled) {

@@ -23,6 +23,7 @@ const loading = document.getElementById('loading');
 const resultSection = document.getElementById('resultSection');
 const resultContent = document.getElementById('resultContent');
 const saveBtn = document.getElementById('saveBtn');
+const saveTxtBtn = document.getElementById('saveTxtBtn');
 const copyBtn = document.getElementById('copyBtn');
 const splitModeRadios = document.querySelectorAll('input[name="splitMode"]');
 
@@ -87,7 +88,7 @@ function setupEventListeners() {
     // チャプター生成
     generateBtn.addEventListener('click', generateChapters);
 
-    // 保存
+    // SRT保存
     saveBtn.addEventListener('click', async () => {
         if (!generatedSrt) return;
 
@@ -104,26 +105,29 @@ function setupEventListeners() {
         }
     });
 
+    // テキスト保存
+    saveTxtBtn.addEventListener('click', async () => {
+        if (!generatedTopics) return;
+
+        const textContent = generateTextContent();
+        const defaultName = currentFile
+            ? currentFile.path.replace('.srt', '_chapters.txt')
+            : 'chapters.txt';
+
+        const pathParts = defaultName.split('/');
+        const savedName = pathParts[pathParts.length - 1];
+
+        const success = await window.electronAPI.saveTxtFile(textContent, savedName);
+        if (success) {
+            alert('テキストファイルを保存しました！');
+        }
+    });
+
     // コピー
     copyBtn.addEventListener('click', () => {
         if (!generatedTopics) return;
 
-        let textToCopy = '';
-        if (generatedTopics.part1 && generatedTopics.part2) {
-            textToCopy = '【前半の話題】\n';
-            textToCopy += generatedTopics.part1.map(t =>
-                typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
-            ).join('\n');
-            textToCopy += '\n\n【後半の話題】\n';
-            textToCopy += generatedTopics.part2.map(t =>
-                typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
-            ).join('\n');
-        } else {
-            textToCopy = '【今回の話題】\n';
-            textToCopy += generatedTopics.map(t =>
-                typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
-            ).join('\n');
-        }
+        const textToCopy = generateTextContent();
 
         navigator.clipboard.writeText(textToCopy).then(() => {
             const originalText = copyBtn.textContent;
@@ -133,6 +137,27 @@ function setupEventListeners() {
             }, 2000);
         });
     });
+}
+
+// テキスト内容を生成（コピーとテキスト保存で共通）
+function generateTextContent() {
+    let text = '';
+    if (generatedTopics.part1 && generatedTopics.part2) {
+        text = '【前半の話題】\n';
+        text += generatedTopics.part1.map(t =>
+            typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
+        ).join('\n');
+        text += '\n\n【後半の話題】\n';
+        text += generatedTopics.part2.map(t =>
+            typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
+        ).join('\n');
+    } else {
+        text = '【今回の話題】\n';
+        text += generatedTopics.map(t =>
+            typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
+        ).join('\n');
+    }
+    return text;
 }
 
 function updateGenerateButton() {

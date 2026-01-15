@@ -8,6 +8,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveSrtFile: (content, defaultName) =>
         ipcRenderer.invoke('save-srt-file', { content, defaultName }),
 
+    // テキストファイルを保存
+    saveTxtFile: (content, defaultName) =>
+        ipcRenderer.invoke('save-txt-file', { content, defaultName }),
+
     // APIキー取得
     getApiKey: () => ipcRenderer.invoke('get-api-key'),
 
