@@ -64,6 +64,17 @@ class SrtParser {
     }
 
     /**
+     * ミリ秒をYouTubeチャプター形式に変換（HH:MM:SS）
+     */
+    static msToChapterTime(ms) {
+        const hours = Math.floor(ms / 3600000);
+        const minutes = Math.floor((ms % 3600000) / 60000);
+        const seconds = Math.floor((ms % 60000) / 1000);
+
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    /**
      * 時間文字列（MM:SS）をミリ秒に変換
      */
     static parseTimeInput(timeStr) {
@@ -82,19 +93,19 @@ class SrtParser {
      * SRTエントリを時間で分割
      * @param {Array} entries - エントリ配列
      * @param {number} splitMs - 分割する時間（ミリ秒）
-     * @returns {Object} { part1: [], part2: [] }
+     * @returns {Object} { part1: [], part2: [], splitMs: number }
      */
     static splitByTime(entries, splitMs) {
         const part1 = entries.filter(e => e.startMs < splitMs);
         const part2 = entries.filter(e => e.startMs >= splitMs);
-        return { part1, part2 };
+        return { part1, part2, splitMs };
     }
 
     /**
      * SRTエントリを2等分
      */
     static splitInHalf(entries) {
-        if (entries.length === 0) return { part1: [], part2: [] };
+        if (entries.length === 0) return { part1: [], part2: [], splitMs: 0 };
 
         const totalDuration = entries[entries.length - 1].endMs;
         const halfPoint = totalDuration / 2;
@@ -103,15 +114,26 @@ class SrtParser {
     }
 
     /**
-     * テキストだけを抽出して連結
+     * テキストだけを抽出して連結（タイムスタンプ情報付き）
+     * Gemini APIが話題の開始時間を推定できるようにタイムスタンプも含める
+     */
+    static extractTextWithTimestamp(entries) {
+        return entries.map(e => {
+            const time = this.msToChapterTime(e.startMs);
+            return `[${time}] ${e.text}`;
+        }).join('\n');
+    }
+
+    /**
+     * テキストだけを抽出（従来版、互換性のため残す）
      */
     static extractText(entries) {
         return entries.map(e => e.text).join('\n');
     }
 
     /**
-     * 話題リストからSRT形式の文字列を生成
-     * @param {Array} topics - 話題の配列
+     * タイムスタンプ付き話題リストからSRT形式の文字列を生成
+     * @param {Array} topics - 話題の配列 [{time: "00:05:30", topic: "話題名"}, ...]
      * @param {string} title - タイトル（任意）
      * @returns {string} SRT形式の文字列
      */
@@ -128,11 +150,15 @@ class SrtParser {
         index++;
         currentMs += displayDuration;
 
-        // 各話題
-        for (const topic of topics) {
+        // 各話題（タイムスタンプ付き）
+        for (const item of topics) {
+            const topicText = typeof item === 'string'
+                ? `・${item}`
+                : `${item.time} ${item.topic}`;
+
             srt += `${index}\n`;
             srt += `${this.msToTime(currentMs)} --> ${this.msToTime(currentMs + displayDuration)}\n`;
-            srt += `・${topic}\n\n`;
+            srt += `${topicText}\n\n`;
             index++;
             currentMs += displayDuration;
         }
@@ -156,10 +182,14 @@ class SrtParser {
         index++;
         currentMs += displayDuration;
 
-        for (const topic of part1Topics) {
+        for (const item of part1Topics) {
+            const topicText = typeof item === 'string'
+                ? `・${item}`
+                : `${item.time} ${item.topic}`;
+
             srt += `${index}\n`;
             srt += `${this.msToTime(currentMs)} --> ${this.msToTime(currentMs + displayDuration)}\n`;
-            srt += `・${topic}\n\n`;
+            srt += `${topicText}\n\n`;
             index++;
             currentMs += displayDuration;
         }
@@ -174,10 +204,14 @@ class SrtParser {
         index++;
         currentMs += displayDuration;
 
-        for (const topic of part2Topics) {
+        for (const item of part2Topics) {
+            const topicText = typeof item === 'string'
+                ? `・${item}`
+                : `${item.time} ${item.topic}`;
+
             srt += `${index}\n`;
             srt += `${this.msToTime(currentMs)} --> ${this.msToTime(currentMs + displayDuration)}\n`;
-            srt += `・${topic}\n\n`;
+            srt += `${topicText}\n\n`;
             index++;
             currentMs += displayDuration;
         }

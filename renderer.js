@@ -7,6 +7,7 @@ let currentFile = null;
 let srtEntries = [];
 let generatedTopics = null;
 let generatedSrt = '';
+let currentSplitMs = 0; // 分割点を保持
 
 // DOM要素
 const apiKeyInput = document.getElementById('apiKeyInput');
@@ -110,12 +111,18 @@ function setupEventListeners() {
         let textToCopy = '';
         if (generatedTopics.part1 && generatedTopics.part2) {
             textToCopy = '【前半の話題】\n';
-            textToCopy += generatedTopics.part1.map(t => `・${t}`).join('\n');
+            textToCopy += generatedTopics.part1.map(t =>
+                typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
+            ).join('\n');
             textToCopy += '\n\n【後半の話題】\n';
-            textToCopy += generatedTopics.part2.map(t => `・${t}`).join('\n');
+            textToCopy += generatedTopics.part2.map(t =>
+                typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
+            ).join('\n');
         } else {
             textToCopy = '【今回の話題】\n';
-            textToCopy += generatedTopics.map(t => `・${t}`).join('\n');
+            textToCopy += generatedTopics.map(t =>
+                typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
+            ).join('\n');
         }
 
         navigator.clipboard.writeText(textToCopy).then(() => {
@@ -151,30 +158,29 @@ async function generateChapters() {
 
         if (splitMode === 'none') {
             // 分割なし
-            const text = SrtParser.extractText(srtEntries);
+            const text = SrtParser.extractTextWithTimestamp(srtEntries);
             generatedTopics = await gemini.analyzeTopics(text);
             generatedSrt = SrtParser.generateChapterSrt(generatedTopics);
 
             displayResults(generatedTopics);
         } else {
             // 分割あり
-            let part1, part2;
+            let splitResult;
 
             if (splitMode === 'half') {
-                const split = SrtParser.splitInHalf(srtEntries);
-                part1 = split.part1;
-                part2 = split.part2;
+                splitResult = SrtParser.splitInHalf(srtEntries);
             } else {
                 const splitMs = SrtParser.parseTimeInput(splitTimeInput.value);
-                const split = SrtParser.splitByTime(srtEntries, splitMs);
-                part1 = split.part1;
-                part2 = split.part2;
+                splitResult = SrtParser.splitByTime(srtEntries, splitMs);
             }
 
-            const text1 = SrtParser.extractText(part1);
-            const text2 = SrtParser.extractText(part2);
+            currentSplitMs = splitResult.splitMs;
 
-            const result = await gemini.analyzeSplitTopics(text1, text2);
+            const text1 = SrtParser.extractTextWithTimestamp(splitResult.part1);
+            const text2 = SrtParser.extractTextWithTimestamp(splitResult.part2);
+
+            // 後半のタイムスタンプを調整するために分割点を渡す
+            const result = await gemini.analyzeSplitTopics(text1, text2, currentSplitMs);
             generatedTopics = result;
             generatedSrt = SrtParser.generateSplitChapterSrt(result.part1, result.part2);
 
@@ -194,16 +200,25 @@ async function generateChapters() {
 function displayResults(topics) {
     resultContent.innerHTML = `
     <div class="part-title">【今回の話題】</div>
-    ${topics.map(t => `<div class="topic-item">・${escapeHtml(t)}</div>`).join('')}
+    ${topics.map(t => {
+        const text = typeof t === 'string' ? `・${t}` : `${t.time} ${escapeHtml(t.topic)}`;
+        return `<div class="topic-item">${text}</div>`;
+    }).join('')}
   `;
 }
 
 function displaySplitResults(part1, part2) {
     resultContent.innerHTML = `
     <div class="part-title">【前半の話題】</div>
-    ${part1.map(t => `<div class="topic-item">・${escapeHtml(t)}</div>`).join('')}
+    ${part1.map(t => {
+        const text = typeof t === 'string' ? `・${t}` : `${t.time} ${escapeHtml(t.topic)}`;
+        return `<div class="topic-item">${text}</div>`;
+    }).join('')}
     <div class="part-title" style="margin-top: 20px;">【後半の話題】</div>
-    ${part2.map(t => `<div class="topic-item">・${escapeHtml(t)}</div>`).join('')}
+    ${part2.map(t => {
+        const text = typeof t === 'string' ? `・${t}` : `${t.time} ${escapeHtml(t.topic)}`;
+        return `<div class="topic-item">${text}</div>`;
+    }).join('')}
   `;
 }
 
