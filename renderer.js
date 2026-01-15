@@ -458,6 +458,10 @@ function drawThumbnail(id) {
     const mainText = id === 1 ? thumbMain1.value : thumbMain2.value;
     const subText = id === 1 ? thumbSub1.value : thumbSub2.value;
 
+    // キャンバスサイズ（HTML側で設定されている前提、デフォルト1280x720と仮定）
+    // 幅調整用マージン
+    const maxWidth = canvas.width - 80;
+
     // キャンバスをクリア
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -477,46 +481,69 @@ function drawThumbnail(id) {
         ctx.fillStyle = '#666';
         ctx.font = 'bold 40px sans-serif';
         ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         ctx.fillText('画像をドロップしてください', canvas.width / 2, canvas.height / 2);
     }
 
-    // テキスト描画（共通設定）
+    // テキスト描画設定
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
     ctx.shadowBlur = 15;
     ctx.shadowOffsetX = 4;
     ctx.shadowOffsetY = 4;
 
-    // メインテキスト（中央）
+    // --- メインテキスト（下部） ---
     if (mainText) {
-        ctx.font = '900 100px "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif'; // 極太ゴシック
+        let fontSize = 110;
+        ctx.font = `900 ${fontSize}px "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif`;
+
+        // 幅に収まるように縮小
+        while (ctx.measureText(mainText).width > maxWidth && fontSize > 40) {
+            fontSize -= 5;
+            ctx.font = `900 ${fontSize}px "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif`;
+        }
+
+        const x = canvas.width / 2;
+        const y = canvas.height - 100; // 下から100px
 
         // 縁取り
         ctx.lineWidth = 20;
         ctx.strokeStyle = 'black';
-        ctx.strokeText(mainText, canvas.width / 2, canvas.height / 2 + 30);
+        ctx.strokeText(mainText, x, y);
 
         // 中身（グラデーション）
-        const gradient = ctx.createLinearGradient(0, canvas.height / 2 - 60, 0, canvas.height / 2 + 60);
+        // グラデーション座標はY位置に合わせて調整
+        const gradient = ctx.createLinearGradient(0, y - fontSize / 2, 0, y + fontSize / 2);
         gradient.addColorStop(0, '#FFFFFF');
         gradient.addColorStop(0.5, '#FFFF00'); // 黄色
         gradient.addColorStop(1, '#FFCC00'); // 濃い黄色
         ctx.fillStyle = gradient;
-        ctx.fillText(mainText, canvas.width / 2, canvas.height / 2 + 30);
+        ctx.fillText(mainText, x, y);
     }
 
-    // サブテキスト（上部）
+    // --- サブテキスト（上部） ---
     if (subText) {
-        ctx.font = 'bold 60px "Hiragino Sans", sans-serif';
+        let fontSize = 70;
+        ctx.font = `bold ${fontSize}px "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif`;
+
+        // 幅に収まるように縮小
+        while (ctx.measureText(subText).width > maxWidth && fontSize > 30) {
+            fontSize -= 4;
+            ctx.font = `bold ${fontSize}px "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif`;
+        }
+
+        const x = canvas.width / 2;
+        const y = 80; // 上から80px
 
         // 縁取り
         ctx.lineWidth = 12;
         ctx.strokeStyle = 'black';
-        ctx.strokeText(subText, canvas.width / 2, 100);
+        ctx.strokeText(subText, x, y);
 
         // 中身（白）
         ctx.fillStyle = 'white';
-        ctx.fillText(subText, canvas.width / 2, 100);
+        ctx.fillText(subText, x, y);
     }
 }
 
