@@ -61,7 +61,7 @@
     <!-- 生成ボタン -->
     <section class="action-section">
       <button id="generateBtn" class="btn btn-accent btn-large" disabled>
-        🚀 チャプター生成
+        🚀 チャプター＆サムネ文言生成
       </button>
       <div id="loading" class="loading hidden">
         <div class="spinner"></div>
@@ -71,6 +71,67 @@
 
     <!-- 結果表示 -->
     <section class="card result-section hidden" id="resultSection">
+      <h2>🖼️ サムネイル作成</h2>
+
+      <!-- 前半/全体用サムネ -->
+      <div id="thumbSection1" class="thumb-generator">
+        <h3 id="thumbTitle1">サムネイル画像</h3>
+        <div class="thumb-controls">
+          <div class="file-drop-zone" id="dropZone1">
+            <span class="drop-text">背景画像をドロップ<br>またはクリックして選択</span>
+            <input type="file" id="bgInput1" accept="image/*" class="hidden">
+          </div>
+
+          <div class="thumb-text-controls">
+            <label>文言パターン選択:</label>
+            <select id="textPattern1" class="pattern-select">
+              <option value="0">案1（インパクト）</option>
+              <option value="1">案2（具体化）</option>
+              <option value="2">案3（問いかけ）</option>
+            </select>
+
+            <div class="text-inputs">
+              <input type="text" id="thumbMain1" placeholder="メイン文言" class="thumb-input main">
+              <input type="text" id="thumbSub1" placeholder="サブ文言" class="thumb-input sub">
+            </div>
+          </div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="thumbCanvas1" width="1280" height="720"></canvas>
+          <button id="downloadThumb1" class="btn btn-sm">💾 画像保存</button>
+        </div>
+      </div>
+
+      <!-- 後半用サムネ（分割時のみ表示） -->
+      <div id="thumbSection2" class="thumb-generator hidden"
+        style="margin-top: 30px; border-top: 1px dashed var(--border); padding-top: 20px;">
+        <h3>後半用サムネイル画像</h3>
+        <div class="thumb-controls">
+          <div class="file-drop-zone" id="dropZone2">
+            <span class="drop-text">背景画像をドロップ<br>またはクリックして選択</span>
+            <input type="file" id="bgInput2" accept="image/*" class="hidden">
+          </div>
+
+          <div class="thumb-text-controls">
+            <label>文言パターン選択:</label>
+            <select id="textPattern2" class="pattern-select">
+              <option value="0">案1（インパクト）</option>
+              <option value="1">案2（具体化）</option>
+              <option value="2">案3（問いかけ）</option>
+            </select>
+
+            <div class="text-inputs">
+              <input type="text" id="thumbMain2" placeholder="メイン文言" class="thumb-input main">
+              <input type="text" id="thumbSub2" placeholder="サブ文言" class="thumb-input sub">
+            </div>
+          </div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="thumbCanvas2" width="1280" height="720"></canvas>
+          <button id="downloadThumb2" class="btn btn-sm">💾 画像保存</button>
+        </div>
+      </div>
+
       <h2>📝 生成結果</h2>
       <div id="resultContent" class="result-content"></div>
       <div class="result-actions">

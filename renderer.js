@@ -27,6 +27,28 @@ const saveTxtBtn = document.getElementById('saveTxtBtn');
 const copyBtn = document.getElementById('copyBtn');
 const splitModeRadios = document.querySelectorAll('input[name="splitMode"]');
 
+// サムネイル用DOM要素
+const thumbSection1 = document.getElementById('thumbSection1');
+const thumbSection2 = document.getElementById('thumbSection2');
+const dropZone1 = document.getElementById('dropZone1');
+const dropZone2 = document.getElementById('dropZone2');
+const bgInput1 = document.getElementById('bgInput1');
+const bgInput2 = document.getElementById('bgInput2');
+const thumbCanvas1 = document.getElementById('thumbCanvas1');
+const thumbCanvas2 = document.getElementById('thumbCanvas2');
+const downloadThumb1 = document.getElementById('downloadThumb1');
+const downloadThumb2 = document.getElementById('downloadThumb2');
+const textPattern1 = document.getElementById('textPattern1');
+const textPattern2 = document.getElementById('textPattern2');
+const thumbMain1 = document.getElementById('thumbMain1');
+const thumbSub1 = document.getElementById('thumbSub1');
+const thumbMain2 = document.getElementById('thumbMain2');
+const thumbSub2 = document.getElementById('thumbSub2');
+
+// サムネ画像の状態
+let thumbImg1 = null;
+let thumbImg2 = null;
+
 // 初期化
 async function init() {
     // APIキーを読み込み
@@ -137,6 +159,10 @@ function setupEventListeners() {
             }, 2000);
         });
     });
+
+    // サムネイル関連のリスナー
+    setupThumbnailListeners(1);
+    setupThumbnailListeners(2);
 }
 
 function updateGenerateButton() {
@@ -168,6 +194,13 @@ async function generateChapters() {
             generatedSrt = SrtParser.generateChapterSrt(result.topics || result);
 
             displayResults(result);
+
+            // サムネUI更新
+            thumbSection1.classList.remove('hidden');
+            thumbSection2.classList.add('hidden');
+            document.getElementById('thumbTitle1').textContent = 'サムネイル画像';
+            updateThumbnailInputs(1, result.thumbnails);
+
         } else {
             // 分割あり
             let splitResult;
@@ -190,6 +223,13 @@ async function generateChapters() {
             generatedSrt = SrtParser.generateSplitChapterSrt(result.part1, result.part2);
 
             displaySplitResults(result.part1, result.part2);
+
+            // サムネUI更新
+            thumbSection1.classList.remove('hidden');
+            thumbSection2.classList.remove('hidden');
+            document.getElementById('thumbTitle1').textContent = '前半用サムネイル画像';
+            updateThumbnailInputs(1, result.part1.thumbnails);
+            updateThumbnailInputs(2, result.part2.thumbnails);
         }
 
         resultSection.classList.remove('hidden');
@@ -310,3 +350,182 @@ function escapeHtml(text) {
 
 // 初期化実行
 init();
+
+function setupThumbnailListeners(id) {
+    const dropZone = id === 1 ? dropZone1 : dropZone2;
+    const bgInput = id === 1 ? bgInput1 : bgInput2;
+    const mainInput = id === 1 ? thumbMain1 : thumbMain2;
+    const subInput = id === 1 ? thumbSub1 : thumbSub2;
+    const downloadBtn = id === 1 ? downloadThumb1 : downloadThumb2;
+    const canvas = id === 1 ? thumbCanvas1 : thumbCanvas2;
+    const patternSelect = id === 1 ? textPattern1 : textPattern2;
+
+    // ドロップゾーンクリックでファイル選択
+    dropZone.addEventListener('click', () => bgInput.click());
+
+    // ファイル選択時
+    bgInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) loadThumbnailImage(file, id);
+    });
+
+    // ドラッグ＆ドロップ
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--accent)';
+    });
+    dropZone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--border)';
+    });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.borderColor = 'var(--border)';
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            loadThumbnailImage(file, id);
+        }
+    });
+
+    // テキスト変更時に再描画
+    mainInput.addEventListener('input', () => drawThumbnail(id));
+    subInput.addEventListener('input', () => drawThumbnail(id));
+
+    // パターン変更時にテキスト更新
+    patternSelect.addEventListener('change', (e) => {
+        const index = parseInt(e.target.value);
+        let thumbs;
+
+        if (generatedTopics && generatedTopics.part1 && generatedTopics.part2) {
+            thumbs = id === 1
+                ? (generatedTopics.part1.thumbnails || [])
+                : (generatedTopics.part2.thumbnails || []);
+        } else if (generatedTopics) {
+            thumbs = generatedTopics.thumbnails || [];
+        } else {
+            thumbs = [];
+        }
+
+        if (thumbs[index]) {
+            mainInput.value = thumbs[index].main;
+            subInput.value = thumbs[index].sub;
+            drawThumbnail(id);
+        }
+    });
+
+    // ダウンロード
+    downloadBtn.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = `thumbnail_part${id}_${getDateStr()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    });
+}
+
+function loadThumbnailImage(file, id) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            if (id === 1) thumbImg1 = img;
+            else thumbImg2 = img;
+            drawThumbnail(id);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function drawThumbnail(id) {
+    const canvas = id === 1 ? thumbCanvas1 : thumbCanvas2;
+    const ctx = canvas.getContext('2d');
+    const img = id === 1 ? thumbImg1 : thumbImg2;
+    const mainText = id === 1 ? thumbMain1.value : thumbMain2.value;
+    const subText = id === 1 ? thumbSub1.value : thumbSub2.value;
+
+    // キャンバスをクリア
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 画像描画
+    if (img) {
+        // アスペクト比を維持して中央に配置（カバー）
+        const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+        const x = (canvas.width - img.width * scale) / 2;
+        const y = (canvas.height - img.height * scale) / 2;
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+    } else {
+        // 画像がない場合はグレー背景
+        ctx.fillStyle = '#333';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // ガイドテキスト
+        ctx.fillStyle = '#666';
+        ctx.font = 'bold 40px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('画像をドロップしてください', canvas.width / 2, canvas.height / 2);
+    }
+
+    // テキスト描画（共通設定）
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 15;
+    ctx.shadowOffsetX = 4;
+    ctx.shadowOffsetY = 4;
+
+    // メインテキスト（中央）
+    if (mainText) {
+        ctx.font = '900 100px "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif'; // 極太ゴシック
+
+        // 縁取り
+        ctx.lineWidth = 20;
+        ctx.strokeStyle = 'black';
+        ctx.strokeText(mainText, canvas.width / 2, canvas.height / 2 + 30);
+
+        // 中身（グラデーション）
+        const gradient = ctx.createLinearGradient(0, canvas.height / 2 - 60, 0, canvas.height / 2 + 60);
+        gradient.addColorStop(0, '#FFFFFF');
+        gradient.addColorStop(0.5, '#FFFF00'); // 黄色
+        gradient.addColorStop(1, '#FFCC00'); // 濃い黄色
+        ctx.fillStyle = gradient;
+        ctx.fillText(mainText, canvas.width / 2, canvas.height / 2 + 30);
+    }
+
+    // サブテキスト（上部）
+    if (subText) {
+        ctx.font = 'bold 60px "Hiragino Sans", sans-serif';
+
+        // 縁取り
+        ctx.lineWidth = 12;
+        ctx.strokeStyle = 'black';
+        ctx.strokeText(subText, canvas.width / 2, 100);
+
+        // 中身（白）
+        ctx.fillStyle = 'white';
+        ctx.fillText(subText, canvas.width / 2, 100);
+    }
+}
+
+function getDateStr() {
+    const now = new Date();
+    return `${now.getMonth() + 1}${now.getDate()}`;
+}
+
+function updateThumbnailInputs(id, thumbnails) {
+    const mainInput = id === 1 ? thumbMain1 : thumbMain2;
+    const subInput = id === 1 ? thumbSub1 : thumbSub2;
+    const patternSelect = id === 1 ? textPattern1 : textPattern2;
+
+    // デフォルトで案1を選択
+    patternSelect.value = "0";
+
+    if (thumbnails && thumbnails.length > 0) {
+        mainInput.value = thumbnails[0].main || '';
+        subInput.value = thumbnails[0].sub || '';
+    } else {
+        mainInput.value = '';
+        subInput.value = '';
+    }
+
+    // 描画更新
+    drawThumbnail(id);
+}
