@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ラジオチャプター生成ツール</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📻 ラジオチャプター生成ツール</h1>
+      <p class="subtitle">SRTから話題をまとめてチャプターを作成</p>
+    </header>
+
+    <!-- APIキー設定 -->
+    <section class="card api-section">
+      <h2>🔑 Gemini APIキー</h2>
+      <div class="input-group">
+        <input type="password" id="apiKeyInput" placeholder="APIキーを入力">
+        <button id="saveApiKeyBtn" class="btn btn-secondary">保存</button>
+      </div>
+      <p class="status" id="apiStatus"></p>
+    </section>
+
+    <!-- ファイル選択 -->
+    <section class="card">
+      <h2>📁 SRTファイルを選択</h2>
+      <button id="selectFileBtn" class="btn btn-primary btn-large">
+        ファイルを選択
+      </button>
+      <div id="fileInfo" class="file-info hidden">
+        <span class="file-name" id="fileName"></span>
+        <span class="file-meta" id="fileMeta"></span>
+      </div>
+    </section>
+
+    <!-- 分割設定 -->
+    <section class="card">
+      <h2>⏱️ 分割設定（オプション）</h2>
+      <div class="radio-group">
+        <label class="radio-label">
+          <input type="radio" name="splitMode" value="none" checked>
+          <span>分割しない</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="splitMode" value="time">
+          <span>時間で分割：</span>
+          <input type="text" id="splitTime" class="time-input" value="30:00" disabled>
+          <span>で分ける</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="splitMode" value="half">
+          <span>2等分する</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- 生成ボタン -->
+    <section class="action-section">
+      <button id="generateBtn" class="btn btn-accent btn-large" disabled>
+        🚀 チャプター生成
+      </button>
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <span>Gemini APIで分析中...</span>
+      </div>
+    </section>
+
+    <!-- 結果表示 -->
+    <section class="card result-section hidden" id="resultSection">
+      <h2>📝 生成結果</h2>
+      <div id="resultContent" class="result-content"></div>
+      <div class="result-actions">
+        <button id="saveBtn" class="btn btn-primary">
+          💾 SRTで保存
+        </button>
+        <button id="copyBtn" class="btn btn-secondary">
+          📋 コピー
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <script src="srt-parser.js"></script>
+  <script src="gemini-api.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+    "name": "radio-chapter-generator",
+    "version": "1.0.0",
+    "description": "ラジオSRTファイルから話題をまとめたチャプターを生成するツール",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron ."
+    },
+    "keywords": [
+        "radio",
+        "srt",
+        "chapter",
+        "gemini"
+    ],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "electron": "^28.0.0"
+    },
+    "dependencies": {
+        "@google/generative-ai": "^0.21.0"
+    }
+}
