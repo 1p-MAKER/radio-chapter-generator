@@ -248,7 +248,9 @@ header h1 {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 結果セクション */
@@ -312,4 +314,26 @@ header h1 {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* 動画タイトル表示用 */
+.video-title-section {
+  margin-bottom: 20px;
+  background: rgba(233, 69, 96, 0.1);
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid var(--accent);
+}
+
+.video-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #fff;
+}
+
+.divider {
+  border: 0;
+  border-top: 1px dashed var(--border);
+  margin: 30px 0;
 }
