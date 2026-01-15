@@ -139,27 +139,6 @@ function setupEventListeners() {
     });
 }
 
-// テキスト内容を生成（コピーとテキスト保存で共通）
-function generateTextContent() {
-    let text = '';
-    if (generatedTopics.part1 && generatedTopics.part2) {
-        text = '【前半の話題】\n';
-        text += generatedTopics.part1.map(t =>
-            typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
-        ).join('\n');
-        text += '\n\n【後半の話題】\n';
-        text += generatedTopics.part2.map(t =>
-            typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
-        ).join('\n');
-    } else {
-        text = '【今回の話題】\n';
-        text += generatedTopics.map(t =>
-            typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
-        ).join('\n');
-    }
-    return text;
-}
-
 function updateGenerateButton() {
     const hasApiKey = apiKeyInput.value.trim() && apiKeyInput.value !== 'your_api_key_here';
     const hasFile = currentFile !== null;
@@ -184,10 +163,11 @@ async function generateChapters() {
         if (splitMode === 'none') {
             // 分割なし
             const text = SrtParser.extractTextWithTimestamp(srtEntries);
-            generatedTopics = await gemini.analyzeTopics(text);
-            generatedSrt = SrtParser.generateChapterSrt(generatedTopics);
+            const result = await gemini.analyzeTopics(text);
+            generatedTopics = result; // { title: "...", topics: [...] }
+            generatedSrt = SrtParser.generateChapterSrt(result.topics || result);
 
-            displayResults(generatedTopics);
+            displayResults(result);
         } else {
             // 分割あり
             let splitResult;
@@ -206,7 +186,7 @@ async function generateChapters() {
 
             // 後半のタイムスタンプを調整するために分割点を渡す
             const result = await gemini.analyzeSplitTopics(text1, text2, currentSplitMs);
-            generatedTopics = result;
+            generatedTopics = result; // { part1: {title, topics}, part2: {title, topics} }
             generatedSrt = SrtParser.generateSplitChapterSrt(result.part1, result.part2);
 
             displaySplitResults(result.part1, result.part2);
@@ -222,8 +202,16 @@ async function generateChapters() {
     }
 }
 
-function displayResults(topics) {
+function displayResults(data) {
+    const topics = data.topics || data;
+    const title = data.title || '（タイトルなし）';
+
     resultContent.innerHTML = `
+    <div class="video-title-section">
+      <div class="part-title">📺 動画タイトル</div>
+      <div class="video-title">${escapeHtml(title)}</div>
+    </div>
+    
     <div class="part-title">【今回の話題】</div>
     ${topics.map(t => {
         const text = typeof t === 'string' ? `・${t}` : `${t.time} ${escapeHtml(t.topic)}`;
@@ -233,18 +221,75 @@ function displayResults(topics) {
 }
 
 function displaySplitResults(part1, part2) {
+    const p1Topics = part1.topics || part1;
+    const p1Title = part1.title || '（タイトルなし）';
+    const p2Topics = part2.topics || part2;
+    const p2Title = part2.title || '（タイトルなし）';
+
     resultContent.innerHTML = `
+    <div class="video-title-section">
+      <div class="part-title">📺 前半動画タイトル</div>
+      <div class="video-title">${escapeHtml(p1Title)}</div>
+    </div>
     <div class="part-title">【前半の話題】</div>
-    ${part1.map(t => {
+    ${p1Topics.map(t => {
         const text = typeof t === 'string' ? `・${t}` : `${t.time} ${escapeHtml(t.topic)}`;
         return `<div class="topic-item">${text}</div>`;
     }).join('')}
-    <div class="part-title" style="margin-top: 20px;">【後半の話題】</div>
-    ${part2.map(t => {
+    
+    <hr class="divider">
+    
+    <div class="video-title-section">
+      <div class="part-title">📺 後半動画タイトル</div>
+      <div class="video-title">${escapeHtml(p2Title)}</div>
+    </div>
+    <div class="part-title">【後半の話題】</div>
+    ${p2Topics.map(t => {
         const text = typeof t === 'string' ? `・${t}` : `${t.time} ${escapeHtml(t.topic)}`;
         return `<div class="topic-item">${text}</div>`;
     }).join('')}
   `;
+}
+
+// テキスト内容を生成（コピーとテキスト保存で共通）
+function generateTextContent() {
+    let text = '';
+
+    // 分割ありの場合の構造チェック
+    if (generatedTopics.part1 && generatedTopics.part2) {
+        const p1 = generatedTopics.part1;
+        const p2 = generatedTopics.part2;
+        const p1Topics = p1.topics || p1;
+        const p1Title = p1.title || '';
+        const p2Topics = p2.topics || p2;
+        const p2Title = p2.title || '';
+
+        text = `【前半タイトル】\n${p1Title}\n\n`;
+        text += '【前半の話題】\n';
+        text += p1Topics.map(t =>
+            typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
+        ).join('\n');
+
+        text += '\n\n-------------------\n\n';
+
+        text += `【後半タイトル】\n${p2Title}\n\n`;
+        text += '【後半の話題】\n';
+        text += p2Topics.map(t =>
+            typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
+        ).join('\n');
+    }
+    // 分割なしの場合
+    else {
+        const topics = generatedTopics.topics || generatedTopics;
+        const title = generatedTopics.title || '';
+
+        text = `【動画タイトル】\n${title}\n\n`;
+        text += '【今回の話題】\n';
+        text += topics.map(t =>
+            typeof t === 'string' ? `・${t}` : `${t.time} ${t.topic}`
+        ).join('\n');
+    }
+    return text;
 }
 
 function formatDuration(ms) {
