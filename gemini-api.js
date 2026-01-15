@@ -97,13 +97,26 @@ ${text}`;
             if (result.title && !result.titles) {
                 result.titles = [result.title];
             }
+            // サムネイルがない場合のフォールバック（空の配列を入れる）
+            if (!result.thumbnails) {
+                result.thumbnails = [
+                    { main: "サムネ文言生成中", sub: "手動で調整してください" },
+                    { main: "サムネ文言生成中", sub: "手動で調整してください" },
+                    { main: "サムネ文言生成中", sub: "手動で調整してください" }
+                ];
+            }
             return result;
         } catch (e) {
             console.error("JSON parse error:", e);
             console.log("Raw text:", generatedText);
-            // フォールバック（以前のパーサーを使用する場合など）
+            // フォールバック
             return {
                 titles: [`ラジオ書き起こし 沖縄ラジオスター ${dateStr}`],
+                thumbnails: [
+                    { main: "ラジオ書き起こし", sub: "沖縄ラジオスター" },
+                    { main: "ラジオ書き起こし", sub: "沖縄ラジオスター" },
+                    { main: "ラジオ書き起こし", sub: "沖縄ラジオスター" }
+                ],
                 topics: this.parseTopicListWithTimestamp(generatedText)
             };
         }
@@ -168,9 +181,25 @@ ${text}`;
             });
         }
 
+        // titleプロパティがある場合の互換性（念のため）
+        const titles1 = result1.titles || (result1.title ? [result1.title] : ['タイトル生成エラー']);
+        const titles2 = result2.titles || (result2.title ? [result2.title] : ['タイトル生成エラー']);
+
+        // サムネイル情報の取得（なければデフォルト）
+        const thumbs1 = result1.thumbnails || [
+            { main: "サムネ文言生成中", sub: "手動で調整してください" },
+            { main: "サムネ文言生成中", sub: "手動で調整してください" },
+            { main: "サムネ文言生成中", sub: "手動で調整してください" }
+        ];
+        const thumbs2 = result2.thumbnails || [
+            { main: "サムネ文言生成中", sub: "手動で調整してください" },
+            { main: "サムネ文言生成中", sub: "手動で調整してください" },
+            { main: "サムネ文言生成中", sub: "手動で調整してください" }
+        ];
+
         return {
-            part1: { title: result1.title, topics: result1.topics || result1 },
-            part2: { title: result2.title, topics: topics2 }
+            part1: { titles: titles1, thumbnails: thumbs1, topics: result1.topics || result1 },
+            part2: { titles: titles2, thumbnails: thumbs2, topics: topics2 }
         };
     }
 
