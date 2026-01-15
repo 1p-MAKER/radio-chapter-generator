@@ -34,11 +34,19 @@ class GeminiAPI {
 - **重要：タイトルの文字数は、末尾の「沖縄ラジオスター...」を含めて「全角100文字以内」に必ず収めてください（YouTubeの制限）**
 - **100文字を超えると投稿できません。短すぎてもOKなので、絶対に100文字を超えないでください**
 - 内容を具体的に示唆しつつ、続きが気になるような書き方にしてください
+- **YouTubeのABテスト用に、切り口を変えたタイトル案を3つ作成してください**
+  1. インパクト重視（衝撃、まさか、など）
+  2. 内容具体化重視（具体的なキーワード多め）
+  3. 疑問・問いかけ重視（〜とは？、〜の真相、など）
 
 【出力形式】
 以下のJSON形式のみを出力してください。Markdownのコードブロックは不要です。
 {
-  "title": "ここに生成したYouTubeタイトル記述（100文字近く）",
+  "titles": [
+    "タイトル案1（インパクト重視）...",
+    "タイトル案2（内容具体化重視）...",
+    "タイトル案3（問いかけ重視）..."
+  ],
   "topics": [
     { "time": "HH:MM:SS", "topic": "話題の内容（最大24文字）" },
     ...
@@ -73,16 +81,23 @@ ${text}`;
         const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
         try {
-            return JSON.parse(generatedText);
+            const result = JSON.parse(generatedText);
+            // 古い形式（titleが文字列のみ）の場合は配列に変換
+            if (result.title && !result.titles) {
+                result.titles = [result.title];
+            }
+            return result;
         } catch (e) {
             console.error("JSON parse error:", e);
             console.log("Raw text:", generatedText);
             // フォールバック（以前のパーサーを使用する場合など）
             return {
-                title: `ラジオ書き起こし 沖縄ラジオスター ${dateStr}`,
+                titles: [`ラジオ書き起こし 沖縄ラジオスター ${dateStr}`],
                 topics: this.parseTopicListWithTimestamp(generatedText)
             };
         }
+
+
     }
 
     /**

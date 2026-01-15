@@ -325,11 +325,26 @@ header h1 {
   border-left: 4px solid var(--accent);
 }
 
-.video-title {
-  font-size: 1.1rem;
+.video-title-item {
+  font-size: 1.05rem;
   font-weight: 700;
   line-height: 1.5;
   color: #fff;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.video-title-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.title-label {
+  color: var(--accent);
+  font-size: 0.9rem;
+  margin-right: 8px;
 }
 
 .divider {
