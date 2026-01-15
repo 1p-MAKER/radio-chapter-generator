@@ -182,7 +182,8 @@ class SrtParser {
         index++;
         currentMs += displayDuration;
 
-        for (const item of part1Topics) {
+        const p1Topics = Array.isArray(part1Topics) ? part1Topics : (part1Topics.topics || []);
+        for (const item of p1Topics) {
             const topicText = typeof item === 'string'
                 ? `・${item}`
                 : `${item.time} ${item.topic}`;
@@ -204,7 +205,8 @@ class SrtParser {
         index++;
         currentMs += displayDuration;
 
-        for (const item of part2Topics) {
+        const p2Topics = Array.isArray(part2Topics) ? part2Topics : (part2Topics.topics || []);
+        for (const item of p2Topics) {
             const topicText = typeof item === 'string'
                 ? `・${item}`
                 : `${item.time} ${item.topic}`;
